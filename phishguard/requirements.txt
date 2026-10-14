@@ -1,0 +1,13 @@
+# PHISHGUARD Requirements
+# Core Web Framework & Templating
+flask>=3.0.0
+werkzeug>=3.0.0
+jinja2>=3.1.0
+
+# Automated Testing
+pytest>=8.0.0
+
+# Optional Machine Learning Module (empirical comparison)
+scikit-learn>=1.4.0
+numpy>=1.24.0
+scipy>=1.10.0

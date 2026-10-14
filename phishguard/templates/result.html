@@ -1,0 +1,265 @@
+{% extends "base.html" %}
+
+{% block title %}PHISHGUARD - Scan Report: {{ report.classification }}{% endblock %}
+
+{% block content %}
+<div style="margin-bottom: 1.5rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+  <div>
+    <a href="{{ url_for('index') }}" class="btn btn-secondary btn-sm">
+      <span>←</span> Scan Another URL
+    </a>
+  </div>
+  <div style="display: flex; gap: 0.5rem;">
+    <button class="btn btn-secondary btn-sm btn-copy" data-copy="{{ report.parsed_data.original_url }}">
+      <span>📋</span> Copy URL
+    </button>
+    <a href="{{ url_for('history') }}" class="btn btn-secondary btn-sm">
+      <span>📜</span> View Audit Log
+    </a>
+  </div>
+</div>
+
+<!-- Header Card: Score Meter & Primary Verdict -->
+<div class="card result-header-card {{ report.color_class }}">
+  <!-- Radial Risk Gauge -->
+  <div class="gauge-wrapper">
+    <div class="score-circle {{ report.color_class }}">
+      <div class="score-number">{{ report.score }}</div>
+      <div class="score-total">/ 100 RISK</div>
+    </div>
+    <span class="badge badge-{{ report.color_class }}">{{ report.badge_label }}</span>
+  </div>
+
+  <!-- Summary Analysis -->
+  <div>
+    <div style="font-size: 0.82rem; text-transform: uppercase; color: var(--text-muted); font-weight: 700; letter-spacing: 0.5px;">
+      Target String Inspection:
+    </div>
+    <div class="scanned-url-box">
+      <span class="scanned-url-text">{{ report.parsed_data.original_url }}</span>
+    </div>
+
+    <h3 style="font-size: 1.35rem; margin-bottom: 0.4rem;">
+      {% if report.classification == 'Likely Safe' %}
+        ✅ Assessment: Low Phishing Probability
+      {% elif report.classification == 'Suspicious' %}
+        ⚠️ Assessment: Moderate Anomaly Indicators Detected
+      {% else %}
+        🚨 Assessment: Critical Phishing / Spoofing Indicators Detected
+      {% endif %}
+    </h3>
+
+    <p class="summary-verdict-text">{{ report.summary_verdict }}</p>
+
+    <div style="display: flex; gap: 1rem; flex-wrap: wrap; font-size: 0.85rem; color: var(--text-secondary); margin-top: 0.5rem;">
+      <span><strong>Protocol:</strong> {{ report.parsed_data.scheme.upper() if report.parsed_data.scheme else 'N/A' }}</span>
+      <span><strong>Host:</strong> {{ report.parsed_data.hostname if report.parsed_data.hostname else 'N/A' }}</span>
+      <span><strong>Triggered Indicators:</strong> {{ report.indicators|length }}</span>
+    </div>
+  </div>
+</div>
+
+<div style="display: grid; grid-template-columns: 2fr 1fr; gap: 1.5rem; margin-top: 1.5rem;" class="result-columns">
+  <!-- Left Column: Detected Security Indicators -->
+  <div>
+    <div class="card">
+      <h3 class="card-title">
+        <span>🚩</span> Detected Threat Indicators ({{ report.indicators|length }})
+      </h3>
+      <p style="color: var(--text-secondary); font-size: 0.88rem; margin-bottom: 1.25rem;">
+        Transparent attribution of risk points contributing to the final score:
+      </p>
+
+      {% for ind in report.indicators %}
+        <div class="indicator-item">
+          <div class="indicator-header">
+            <div class="indicator-title">
+              <span class="badge badge-{{ ind.severity.lower() }}">{{ ind.severity }}</span>
+              <span>{{ ind.title }}</span>
+            </div>
+            {% if ind.points > 0 %}
+              <span class="indicator-points">+{{ ind.points }} pts</span>
+            {% else %}
+              <span class="indicator-points" style="color: var(--safe-color); background: var(--safe-bg);">0 pts</span>
+            {% endif %}
+          </div>
+          <div class="indicator-desc">{{ ind.description }}</div>
+          <div class="indicator-edu">
+            <strong>Security Context:</strong> {{ ind.educational_note }}
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+
+    <!-- Technical Feature Matrix Table -->
+    <div class="card">
+      <h3 class="card-title">
+        <span>🔬</span> Extracted Feature Matrix
+      </h3>
+      <p style="color: var(--text-secondary); font-size: 0.88rem; margin-bottom: 1rem;">
+        Detailed structural, lexical, and behavioral metrics extracted without visiting the destination:
+      </p>
+
+      <div class="table-responsive">
+        <table class="tech-table">
+          <thead>
+            <tr>
+              <th>Feature Category</th>
+              <th>Attribute Value</th>
+              <th>Status / Evaluation</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Protocol Security</strong></td>
+              <td><code>{{ report.parsed_data.scheme.upper() }}</code></td>
+              <td>
+                {% if report.features.has_https %}
+                  <span style="color: var(--safe-color);">✓ TLS/HTTPS Encrypted</span>
+                {% else %}
+                  <span style="color: var(--suspicious-color);">⚠ Insecure Plaintext HTTP</span>
+                {% endif %}
+              </td>
+            </tr>
+            <tr>
+              <td><strong>Hostname Identity</strong></td>
+              <td><code>{{ report.parsed_data.hostname }}</code></td>
+              <td>
+                {% if report.features.is_ip_address %}
+                  <span style="color: var(--phishing-color);">Direct IP Address Host (IPv{{ report.features.ip_version }})</span>
+                {% else %}
+                  <span style="color: var(--safe-color);">Registered FQDN Domain</span>
+                {% endif %}
+              </td>
+            </tr>
+            <tr>
+              <td><strong>Domain Hierarchy</strong></td>
+              <td>
+                Apex: <code>{{ report.parsed_data.domain }}.{{ report.parsed_data.tld }}</code>
+                {% if report.parsed_data.subdomain %}<br>Subdomain: <code>{{ report.parsed_data.subdomain }}</code>{% endif %}
+              </td>
+              <td>
+                {{ report.features.num_subdomains }} Subdomain Levels
+                {% if report.features.num_subdomains >= 3 %}
+                  <span style="color: var(--phishing-color);">(High Stacking)</span>
+                {% endif %}
+              </td>
+            </tr>
+            <tr>
+              <td><strong>Top-Level Domain (TLD)</strong></td>
+              <td><code>.{{ report.parsed_data.tld }}</code></td>
+              <td>
+                {% if report.features.is_suspicious_tld %}
+                  <span style="color: var(--phishing-color);">⚠ High-Abuse TLD</span>
+                {% else %}
+                  <span style="color: var(--text-secondary);">Standard Registry</span>
+                {% endif %}
+              </td>
+            </tr>
+            <tr>
+              <td><strong>Hostname Randomness (Entropy)</strong></td>
+              <td><code>{{ report.features.hostname_entropy }} bits</code></td>
+              <td>
+                {% if report.features.is_high_entropy %}
+                  <span style="color: var(--suspicious-color);">Elevated Entropy (Possible DGA)</span>
+                {% else %}
+                  <span style="color: var(--text-secondary);">Normal Lexical Range</span>
+                {% endif %}
+              </td>
+            </tr>
+            <tr>
+              <td><strong>Lengths</strong></td>
+              <td>
+                URL: <code>{{ report.features.url_length }} chars</code><br>
+                Host: <code>{{ report.features.hostname_length }} chars</code>
+              </td>
+              <td>
+                {% if report.features.url_length > 120 %}
+                  <span style="color: var(--suspicious-color);">Unusually Long URL</span>
+                {% else %}
+                  <span style="color: var(--safe-color);">Acceptable Length</span>
+                {% endif %}
+              </td>
+            </tr>
+            <tr>
+              <td><strong>Obfuscation Artifacts</strong></td>
+              <td>
+                @ Symbol: <code>{{ 'Present' if report.features.has_at_symbol else 'None' }}</code><br>
+                URL Shortener: <code>{{ 'Yes' if report.features.is_shortener else 'No' }}</code><br>
+                Punycode (IDN): <code>{{ 'Yes' if report.features.has_punycode else 'No' }}</code>
+              </td>
+              <td>
+                {% if report.features.has_at_symbol or report.features.is_shortener or report.features.has_punycode %}
+                  <span style="color: var(--phishing-color);">Deceptive Obfuscation Detected</span>
+                {% else %}
+                  <span style="color: var(--safe-color);">Clean Formatting</span>
+                {% endif %}
+              </td>
+            </tr>
+            <tr>
+              <td><strong>Suspicious Keywords & Brands</strong></td>
+              <td>
+                Keywords: <code>{{ report.features.matched_suspicious_keywords|join(', ') if report.features.matched_suspicious_keywords else 'None' }}</code><br>
+                Brands: <code>{{ report.features.matched_target_brands|join(', ') if report.features.matched_target_brands else 'None' }}</code>
+              </td>
+              <td>
+                {% if report.features.brand_in_subdomain_or_path %}
+                  <span style="color: var(--phishing-color);">⚠ Brand Spoofing in Subdomain/Path</span>
+                {% elif report.features.matched_suspicious_keywords %}
+                  <span style="color: var(--suspicious-color);">Urgency/Auth Terms Present</span>
+                {% else %}
+                  <span style="color: var(--safe-color);">No High-Risk Keywords</span>
+                {% endif %}
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Right Column: Defensive Recommendations -->
+  <div>
+    <div class="card" style="border-top: 4px solid var(--accent-cyan);">
+      <h3 class="card-title">
+        <span>🛡️</span> Security Recommendations
+      </h3>
+      <p style="color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 1rem;">
+        Actionable safety steps based on the risk score:
+      </p>
+
+      <ul class="recommendations-list">
+        {% for rec in report.recommendations %}
+          <li>
+            <span class="rec-bullet">👉</span>
+            <span>{{ rec }}</span>
+          </li>
+        {% endfor %}
+      </ul>
+
+      <div style="margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid var(--border-color);">
+        <h4 style="font-size: 0.9rem; margin-bottom: 0.5rem; color: var(--accent-cyan);">Defensive Tip for Users:</h4>
+        <p style="font-size: 0.82rem; color: var(--text-muted); line-height: 1.5;">
+          Never rely on visual domain similarity alone. Attackers register similar looking domains (typosquatting) or abuse free cloud hosting providers to imitate legitimate companies.
+        </p>
+      </div>
+    </div>
+
+    <!-- Quick Actions Card -->
+    <div class="card">
+      <h3 class="card-title"><span>⚡</span> Quick Next Steps</h3>
+      <div style="display: flex; flex-direction: column; gap: 0.6rem;">
+        <a href="{{ url_for('index') }}" class="btn btn-primary btn-sm" style="width: 100%;">
+          <span>🔍</span> Analyze Another Link
+        </a>
+        <a href="{{ url_for('history') }}" class="btn btn-secondary btn-sm" style="width: 100%;">
+          <span>📋</span> View Audit History
+        </a>
+        <a href="{{ url_for('ml_dashboard') }}" class="btn btn-secondary btn-sm" style="width: 100%;">
+          <span>🧠</span> View ML Model Benchmark
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

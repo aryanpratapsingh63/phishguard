@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}PHISHGUARD - Phishing URL Detection & Risk Analysis{% endblock %}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🛡️</text></svg>">
+</head>
+<body>
+
+  <!-- Top Navigation Bar -->
+  <nav class="navbar">
+    <div class="nav-container">
+      <a href="{{ url_for('index') }}" class="brand-link">
+        <div class="brand-icon">PG</div>
+        <span class="brand-title">PHISHGUARD</span>
+        <span class="brand-badge">Defensive v1.0</span>
+      </a>
+
+      <ul class="nav-links">
+        <li>
+          <a href="{{ url_for('index') }}" class="{% if request.endpoint == 'index' %}active{% endif %}">
+            <span>🔍</span> Analyzer
+          </a>
+        </li>
+        <li>
+          <a href="{{ url_for('history') }}" class="{% if request.endpoint == 'history' %}active{% endif %}">
+            <span>📋</span> Scan History
+          </a>
+        </li>
+        <li>
+          <a href="{{ url_for('ml_dashboard') }}" class="{% if request.endpoint == 'ml_dashboard' %}active{% endif %}">
+            <span>🧠</span> ML Evaluation
+          </a>
+        </li>
+      </ul>
+    </div>
+  </nav>
+
+  <!-- Flash Messages Banner -->
+  <main class="main-wrapper">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <div class="alert-container">
+          {% for category, message in messages %}
+            <div class="alert alert-{{ category if category != 'error' else 'danger' }}">
+              <span>{{ message }}</span>
+              <button class="close-alert" onclick="this.parentElement.remove()">&times;</button>
+            </div>
+          {% endfor %}
+        </div>
+      {% endif %}
+    {% endwith %}
+
+    {% block content %}{% endblock %}
+  </main>
+
+  <!-- Cybersecurity Awareness Footer -->
+  <footer class="footer">
+    <div class="footer-container">
+      <div class="footer-top">
+        <div>
+          <strong style="color: var(--text-primary); font-size: 0.95rem;">PHISHGUARD Defense System</strong>
+          <p style="margin-top: 0.25rem;">Defensive Phishing URL Detection & Explainable Risk Analysis Engine</p>
+        </div>
+        <div>
+          <a href="{{ url_for('index') }}" style="color: var(--accent-cyan); text-decoration: none; margin-right: 1.25rem;">Dashboard</a>
+          <a href="{{ url_for('history') }}" style="color: var(--accent-cyan); text-decoration: none; margin-right: 1.25rem;">Audit History</a>
+          <a href="{{ url_for('ml_dashboard') }}" style="color: var(--accent-cyan); text-decoration: none;">ML Benchmark</a>
+        </div>
+      </div>
+
+      <div class="disclaimer-box">
+        <strong>⚠️ Cybersecurity Ethical Disclaimer:</strong>
+        This defensive software operates strictly on passive string analysis and heuristic decomposition. It does <em>not</em> establish network connections, visit target servers, or execute foreign scripts. Phishing scores are estimated risk indicators; always practice defense-in-depth and verify authentication workflows through trusted secondary channels.
+      </div>
+    </div>
+  </footer>
+
+  <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+</body>
+</html>

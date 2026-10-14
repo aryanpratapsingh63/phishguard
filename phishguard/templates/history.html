@@ -1,0 +1,138 @@
+{% extends "base.html" %}
+
+{% block title %}PHISHGUARD - Scan History & Audit Log{% endblock %}
+
+{% block content %}
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
+  <div>
+    <h1 style="font-size: 1.8rem; font-weight: 800;">📋 Scan History & Audit Trail</h1>
+    <p style="color: var(--text-secondary); font-size: 0.9rem;">
+      Local SQLite inspection logs. Never stores passwords, tokens, or credentials.
+    </p>
+  </div>
+  <div style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
+    <a href="{{ url_for('export_history_json') }}" class="btn btn-secondary btn-sm" download="phishguard_scans.json">
+      <span>💾</span> Export JSON
+    </a>
+    <form action="{{ url_for('clear_all_history') }}" method="POST" onsubmit="return confirmClearHistory();" style="display: inline;">
+      <button type="submit" class="btn btn-danger btn-sm">
+        <span>🗑️</span> Clear All History
+      </button>
+    </form>
+  </div>
+</div>
+
+<!-- Aggregate Statistics Cards -->
+<div class="stats-grid">
+  <div class="stat-card">
+    <div class="stat-label">Total Scans</div>
+    <div class="stat-value" style="color: var(--accent-cyan);">{{ stats.total_scans }}</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label">Likely Safe</div>
+    <div class="stat-value" style="color: var(--safe-color);">{{ stats.safe_count }}</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label">Suspicious</div>
+    <div class="stat-value" style="color: var(--suspicious-color);">{{ stats.suspicious_count }}</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label">Potential Phishing</div>
+    <div class="stat-value" style="color: var(--phishing-color);">{{ stats.phishing_count }}</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label">Average Risk Score</div>
+    <div class="stat-value" style="color: #c7d2fe;">{{ stats.avg_risk_score }}<span style="font-size: 0.9rem; color: var(--text-muted);">/100</span></div>
+  </div>
+</div>
+
+<!-- History Log Table Card -->
+<div class="card">
+  <div class="search-bar-wrapper">
+    <span style="color: var(--text-muted);">🔍</span>
+    <input 
+      type="text" 
+      id="history-search" 
+      class="search-input" 
+      placeholder="Filter by domain, URL keywords, or classification (e.g. 'paypal', 'Likely Safe', '192.168')..."
+    >
+  </div>
+
+  {% if scans and scans|length > 0 %}
+    <div class="table-responsive">
+      <table class="tech-table">
+        <thead>
+          <tr>
+            <th>Timestamp</th>
+            <th>Target URL / Hostname</th>
+            <th>Risk Score</th>
+            <th>Classification</th>
+            <th>Indicators Summary</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for item in scans %}
+            <tr class="history-row" data-url="{{ item.url }}" data-host="{{ item.hostname }}" data-class="{{ item.classification }}">
+              <td style="white-space: nowrap; font-size: 0.8rem; color: var(--text-muted);">
+                {{ item.scanned_at }}
+              </td>
+              <td style="max-width: 320px;">
+                <div style="font-weight: 600; color: var(--text-primary); font-size: 0.9rem;">
+                  {{ item.hostname if item.hostname else 'Unknown Host' }}
+                </div>
+                <div style="font-family: monospace; font-size: 0.78rem; color: var(--text-secondary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="{{ item.url }}">
+                  {{ item.url }}
+                </div>
+              </td>
+              <td>
+                <span style="font-weight: 800; font-size: 1.1rem; {% if item.risk_score <= 29 %}color: var(--safe-color);{% elif item.risk_score <= 59 %}color: var(--suspicious-color);{% else %}color: var(--phishing-color);{% endif %}">
+                  {{ item.risk_score }}
+                </span>
+                <span style="font-size: 0.75rem; color: var(--text-muted);">/100</span>
+              </td>
+              <td>
+                {% if item.classification == 'Likely Safe' %}
+                  <span class="badge badge-safe">Likely Safe</span>
+                {% elif item.classification == 'Suspicious' %}
+                  <span class="badge badge-suspicious">Suspicious</span>
+                {% else %}
+                  <span class="badge badge-phishing">Potential Phishing</span>
+                {% endif %}
+              </td>
+              <td style="font-size: 0.82rem; color: var(--text-secondary); max-width: 250px;">
+                {% if item.indicators_summary %}
+                  {{ item.indicators_summary }}
+                {% else %}
+                  <span style="color: var(--text-muted);">Standard conventions</span>
+                {% endif %}
+              </td>
+              <td style="white-space: nowrap;">
+                <form action="{{ url_for('analyze') }}" method="POST" style="display: inline;">
+                  <input type="hidden" name="url" value="{{ item.url }}">
+                  <button type="submit" class="btn btn-secondary btn-sm" title="Re-analyze URL">
+                    <span>🔄</span>
+                  </button>
+                </form>
+                <form action="{{ url_for('delete_history_item', scan_id=item.id) }}" method="POST" style="display: inline;">
+                  <button type="submit" class="btn btn-secondary btn-sm" style="color: #fca5a5;" title="Delete this entry">
+                    <span>✕</span>
+                  </button>
+                </form>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    <div style="text-align: center; padding: 3rem 1rem; color: var(--text-muted);">
+      <div style="font-size: 2.5rem; margin-bottom: 0.5rem;">📭</div>
+      <p style="font-size: 1.05rem; font-weight: 600; color: var(--text-secondary);">No scan records in history yet.</p>
+      <p style="font-size: 0.85rem; margin-top: 0.35rem;">
+        Use the <a href="{{ url_for('index') }}" style="color: var(--accent-cyan);">URL Analyzer</a> to scan links.
+      </p>
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

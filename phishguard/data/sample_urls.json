@@ -1,0 +1,50 @@
+[
+  {
+    "category": "Legitimate",
+    "url": "https://www.google.com/search?q=cybersecurity+best+practices",
+    "expected_classification": "Likely Safe",
+    "description": "Legitimate major search engine with HTTPS and clean domain structure."
+  },
+  {
+    "category": "Legitimate",
+    "url": "https://en.wikipedia.org/wiki/Phishing",
+    "expected_classification": "Likely Safe",
+    "description": "Legitimate encyclopedia domain with standard structure."
+  },
+  {
+    "category": "Legitimate",
+    "url": "https://docs.python.org/3/library/urllib.parse.html",
+    "expected_classification": "Likely Safe",
+    "description": "Standard documentation website with HTTPS."
+  },
+  {
+    "category": "Suspicious",
+    "url": "http://tinyurl.com/secure-login-portal",
+    "expected_classification": "Suspicious",
+    "description": "URL shortener hiding true destination, unencrypted HTTP, and authentication keyword."
+  },
+  {
+    "category": "Suspicious",
+    "url": "http://free-gift-card-bonus.top/claim-now",
+    "expected_classification": "Suspicious",
+    "description": "High-abuse top-level domain (.top) and plain HTTP."
+  },
+  {
+    "category": "Potential Phishing",
+    "url": "http://192.168.1.105/paypal/account-verification/login.php",
+    "expected_classification": "Potential Phishing",
+    "description": "Direct IPv4 address as host, brand spoofing in path, and plain HTTP."
+  },
+  {
+    "category": "Potential Phishing",
+    "url": "http://login-apple-support-verify.account-update.tk/signin.html?user=victim",
+    "expected_classification": "Potential Phishing",
+    "description": "Free abused TLD (.tk), excessive subdomains, brand impersonation, and urgency keywords."
+  },
+  {
+    "category": "Potential Phishing",
+    "url": "https://microsoft-security-auth@malicious-redirect.com/login",
+    "expected_classification": "Potential Phishing",
+    "description": "Credential '@' symbol used to deceive users regarding true destination host."
+  }
+]

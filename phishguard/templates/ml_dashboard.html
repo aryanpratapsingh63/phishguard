@@ -1,0 +1,162 @@
+{% extends "base.html" %}
+
+{% block title %}PHISHGUARD - Machine Learning Evaluation & Benchmark{% endblock %}
+
+{% block content %}
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
+  <div>
+    <h1 style="font-size: 1.8rem; font-weight: 800;">🧠 Machine Learning Model Evaluation</h1>
+    <p style="color: var(--text-secondary); font-size: 0.9rem;">
+      Empirical benchmark evaluation comparing the rule-based baseline against an ML classifier.
+    </p>
+  </div>
+  <div>
+    <form action="{{ url_for('run_ml_evaluation') }}" method="POST" style="display: inline;">
+      <button type="submit" class="btn btn-primary btn-sm">
+        <span>⚡</span> Re-Train & Evaluate Benchmark
+      </button>
+    </form>
+  </div>
+</div>
+
+<!-- Architecture & Philosophy Card -->
+<div class="card" style="border-left: 4px solid var(--accent-blue);">
+  <h3 class="card-title">
+    <span>⚖️</span> Dual-Engine Design: Explainable Rule Baseline vs. Machine Learning
+  </h3>
+  <p style="color: var(--text-secondary); font-size: 0.92rem; line-height: 1.6;">
+    In mission-critical cybersecurity operations, <strong>explainability</strong> is paramount. PHISHGUARD uses the deterministic <strong>Rule-Based Risk Engine</strong> as its primary operational defense because every decision is attributable to specific indicators (e.g., RFC compliance, IP formats, brand spoofing). The <strong>Machine Learning Module</strong> serves as empirical validation, learning statistical feature correlations across lexical and structural dimensions.
+  </p>
+</div>
+
+<!-- Metrics Overview Cards -->
+<div class="stats-grid">
+  <div class="stat-card">
+    <div class="stat-label">Model Accuracy</div>
+    <div class="stat-value" style="color: var(--safe-color);">{{ (metrics.accuracy * 100)|round(1) }}%</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label">Precision (Phishing)</div>
+    <div class="stat-value" style="color: var(--accent-cyan);">{{ (metrics.precision * 100)|round(1) }}%</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label">Recall (Sensitivity)</div>
+    <div class="stat-value" style="color: #c084fc;">{{ (metrics.recall * 100)|round(1) }}%</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label">F1 Score (Balanced)</div>
+    <div class="stat-value" style="color: #60a5fa;">{{ (metrics.f1_score * 100)|round(1) }}%</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label">Benchmark Samples</div>
+    <div class="stat-value" style="color: var(--text-primary);">{{ metrics.total_samples }}</div>
+  </div>
+</div>
+
+<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;" class="result-columns">
+  <!-- Left Column: Actual Confusion Matrix -->
+  <div class="card">
+    <h3 class="card-title">
+      <span>🔢</span> Empirical Confusion Matrix (Test Partition)
+    </h3>
+    <p style="color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 1rem;">
+      Calculated on held-out test data ({{ metrics.test_samples }} test URLs, 25% partition):
+    </p>
+
+    <div class="matrix-grid">
+      <div></div>
+      <div class="matrix-header">Pred: Safe (0)</div>
+      <div class="matrix-header">Pred: Phish (1)</div>
+
+      <div class="matrix-header" style="text-align: right; padding-right: 0.5rem;">Actual: Safe</div>
+      <div class="matrix-cell tn">
+        <div class="matrix-count" style="color: var(--safe-color);">{{ metrics.confusion_matrix.true_negative }}</div>
+        <div class="matrix-desc">True Negative (TN)</div>
+      </div>
+      <div class="matrix-cell error-cell">
+        <div class="matrix-count" style="color: var(--suspicious-color);">{{ metrics.confusion_matrix.false_positive }}</div>
+        <div class="matrix-desc">False Positive (FP)</div>
+      </div>
+
+      <div class="matrix-header" style="text-align: right; padding-right: 0.5rem;">Actual: Phish</div>
+      <div class="matrix-cell error-cell">
+        <div class="matrix-count" style="color: var(--phishing-color);">{{ metrics.confusion_matrix.false_negative }}</div>
+        <div class="matrix-desc">False Negative (FN)</div>
+      </div>
+      <div class="matrix-cell tp">
+        <div class="matrix-count" style="color: var(--phishing-color);">{{ metrics.confusion_matrix.true_positive }}</div>
+        <div class="matrix-desc">True Positive (TP)</div>
+      </div>
+    </div>
+
+    <div style="font-size: 0.8rem; color: var(--text-muted); background: rgba(0, 0, 0, 0.25); padding: 0.75rem; border-radius: var(--radius-sm); margin-top: 1rem;">
+      <strong>Note on Cybersecurity Metrics:</strong> In anti-phishing defense, <em>False Negatives</em> (missing a real phishing link) are far more dangerous than False Positives.
+    </div>
+  </div>
+
+  <!-- Right Column: Discriminative Feature Weights -->
+  <div class="card">
+    <h3 class="card-title">
+      <span>📊</span> Top Discriminative Feature Weights
+    </h3>
+    <p style="color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 1rem;">
+      Feature importance rankings learned by the model:
+    </p>
+
+    <div class="table-responsive">
+      <table class="tech-table">
+        <thead>
+          <tr>
+            <th>Rank</th>
+            <th>Feature Name</th>
+            <th>Importance / Weight</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for item in metrics.top_features %}
+            <tr>
+              <td>#{{ loop.index }}</td>
+              <td><code>{{ item.feature }}</code></td>
+              <td>
+                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                  <div style="flex: 1; background: rgba(255, 255, 255, 0.1); height: 6px; border-radius: 3px; overflow: hidden;">
+                    <div style="width: {{ (item.importance * 100)|round }}%; background: var(--accent-cyan); height: 100%;"></div>
+                  </div>
+                  <span style="font-size: 0.8rem; color: var(--accent-cyan); font-weight: 700;">
+                    {{ (item.importance * 100)|round(1) }}%
+                  </span>
+                </div>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- Experimental Details Card -->
+<div class="card" style="margin-top: 1.5rem;">
+  <h3 class="card-title">
+    <span>🔬</span> Academic Experimentation Details
+  </h3>
+  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; font-size: 0.88rem;">
+    <div>
+      <strong style="color: var(--text-muted); text-transform: uppercase; font-size: 0.75rem;">Model Pipeline:</strong>
+      <p style="color: var(--text-primary); margin-top: 0.25rem;">{{ metrics.engine }}</p>
+    </div>
+    <div>
+      <strong style="color: var(--text-muted); text-transform: uppercase; font-size: 0.75rem;">Training Split:</strong>
+      <p style="color: var(--text-primary); margin-top: 0.25rem;">75% Train ({{ metrics.train_samples }} URLs), 25% Test ({{ metrics.test_samples }} URLs)</p>
+    </div>
+    <div>
+      <strong style="color: var(--text-muted); text-transform: uppercase; font-size: 0.75rem;">Dataset Integrity:</strong>
+      <p style="color: var(--text-primary); margin-top: 0.25rem;">120 Curated Balanced Legit & Phish Patterns</p>
+    </div>
+    <div>
+      <strong style="color: var(--text-muted); text-transform: uppercase; font-size: 0.75rem;">Primary Baseline:</strong>
+      <p style="color: var(--text-primary); margin-top: 0.25rem;">Explainable Heuristic Engine</p>
+    </div>
+  </div>
+</div>
+{% endblock %}

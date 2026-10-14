@@ -1,0 +1,62 @@
+{
+  "engine": "scikit-learn RandomForestClassifier",
+  "status": "trained",
+  "total_samples": 120,
+  "train_samples": 90,
+  "test_samples": 30,
+  "accuracy": 1.0,
+  "precision": 1.0,
+  "recall": 1.0,
+  "f1_score": 1.0,
+  "confusion_matrix": {
+    "true_negative": 15,
+    "false_positive": 0,
+    "false_negative": 0,
+    "true_positive": 15,
+    "raw_matrix": [
+      [
+        15,
+        0
+      ],
+      [
+        0,
+        15
+      ]
+    ]
+  },
+  "top_features": [
+    {
+      "feature": "has_https",
+      "importance": 0.3278
+    },
+    {
+      "feature": "hostname_length",
+      "importance": 0.1304
+    },
+    {
+      "feature": "num_hyphens_url",
+      "importance": 0.0983
+    },
+    {
+      "feature": "hostname_entropy",
+      "importance": 0.0865
+    },
+    {
+      "feature": "is_suspicious_tld",
+      "importance": 0.0751
+    },
+    {
+      "feature": "num_hyphens_hostname",
+      "importance": 0.0643
+    },
+    {
+      "feature": "num_suspicious_keywords",
+      "importance": 0.0407
+    },
+    {
+      "feature": "url_length",
+      "importance": 0.0372
+    }
+  ],
+  "baseline_note": "Rule-based engine serves as the deterministic, fully-explainable baseline; Random Forest serves as empirical comparative validation."
+}
