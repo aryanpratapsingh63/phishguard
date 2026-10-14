@@ -1,0 +1,126 @@
+{% extends "base.html" %}
+
+{% block title %}PHISHGUARD - Phishing URL Detection Dashboard{% endblock %}
+
+{% block content %}
+<section class="hero-section">
+  <div class="hero-tag">🛡️ Proactive Cyber Defense Triage</div>
+  <h1 class="hero-title">Defensive Phishing URL Detection & Risk Analysis</h1>
+  <p class="hero-subtitle">
+    Inspect suspicious links locally and instantly determine structural, lexical, and behavioral risk scores before interacting with unverified web destinations.
+  </p>
+</section>
+
+<!-- Scanner Form Card -->
+<div class="card scanner-card">
+  <h2 class="card-title">
+    <span>🔬</span> URL Security Inspection Engine
+  </h2>
+
+  <form id="scan-form" action="{{ url_for('analyze') }}" method="POST">
+    <div class="form-group">
+      <div class="input-label">
+        <span>Target URL String to Analyze:</span>
+        <span id="char-counter" class="char-counter">0 / 2048 chars</span>
+      </div>
+      <div class="url-input-wrapper">
+        <span class="input-icon">🔗</span>
+        <input 
+          type="text" 
+          id="url-input" 
+          name="url" 
+          class="url-input" 
+          placeholder="e.g. http://192.168.1.100/paypal/login.php or https://example.com" 
+          required 
+          autocomplete="off"
+          spellcheck="false"
+          maxlength="2048"
+        >
+      </div>
+    </div>
+
+    <div class="btn-group">
+      <button type="submit" class="btn btn-primary">
+        <span>🛡️</span> Analyze URL Risk
+      </button>
+      <button type="button" id="clear-btn" class="btn btn-secondary">
+        <span>🧹</span> Clear Input
+      </button>
+    </div>
+  </form>
+
+  <!-- Quick Test Example URL Presets -->
+  <div class="quick-tests-container">
+    <div class="quick-tests-label">🧪 Quick Test Presets (Click to load into inspector):</div>
+    <div class="preset-pills">
+      {% for sample in sample_presets %}
+        <button 
+          type="button" 
+          class="preset-pill {% if sample.category == 'Legitimate' %}safe-pill{% elif sample.category == 'Suspicious' %}suspicious-pill{% else %}phishing-pill{% endif %}"
+          data-url="{{ sample.url }}"
+          title="{{ sample.description }}"
+        >
+          {% if sample.category == 'Legitimate' %}
+            🟢 {{ sample.category }}: {{ sample.url[:28] }}...
+          {% elif sample.category == 'Suspicious' %}
+            🟡 {{ sample.category }}: {{ sample.url[:28] }}...
+          {% else %}
+            🔴 {{ sample.category }}: {{ sample.url[:28] }}...
+          {% endif %}
+        </button>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+
+<!-- Architecture & Capabilities Grid -->
+<div class="features-grid">
+  <div class="feature-box">
+    <div class="feature-icon-wrapper">🔒</div>
+    <h4>Zero-Footprint Passive Analysis</h4>
+    <p>
+      Submitted URLs are never pinged or executed. Analysis is performed strictly in-memory using local lexical and heuristic parsers.
+    </p>
+  </div>
+
+  <div class="feature-box">
+    <div class="feature-icon-wrapper">📊</div>
+    <h4>Transparent Risk Attribution</h4>
+    <p>
+      Every risk score point (0–100) is tied to explainable indicators: IP hosts, brand impersonation, deceptive credentials, or entropy anomalies.
+    </p>
+  </div>
+
+  <div class="feature-box">
+    <div class="feature-icon-wrapper">🎯</div>
+    <h4>Multi-Vector Threat Heuristics</h4>
+    <p>
+      Evaluates 18+ cyber indicators including high-abuse TLDs, punycode homographs, shortener masking, and subdomain depth spoofing.
+    </p>
+  </div>
+
+  <div class="feature-box">
+    <div class="feature-icon-wrapper">📜</div>
+    <h4>Auditable SQLite Scan Trail</h4>
+    <p>
+      Stores query timestamps, classifications, and indicators without retaining credentials, session cookies, or sensitive parameters.
+    </p>
+  </div>
+</div>
+
+<!-- Cybersecurity Awareness Section -->
+<div class="card" style="margin-top: 1.5rem; border-left: 4px solid var(--accent-cyan);">
+  <h3 class="card-title">
+    <span>💡</span> Cybersecurity Awareness Note: Anatomy of Phishing URLs
+  </h3>
+  <p style="color: var(--text-secondary); font-size: 0.93rem; margin-bottom: 0.75rem;">
+    Phishing attacks rely heavily on psychological deception and deceptive URL formatting to mislead victims before they realize their credentials have been harvested. Common deceptive tactics include:
+  </p>
+  <ul style="color: var(--text-secondary); font-size: 0.88rem; padding-left: 1.25rem; line-height: 1.7;">
+    <li><strong>Subdomain Brand Hijacking:</strong> Placing trusted names (e.g. <code>paypal.com.attacker-controlled.net</code>) in the subdomain while the apex domain belongs to the adversary.</li>
+    <li><strong>Direct IP Hosts:</strong> Avoiding domain registration records and WHOIS lookups by directing targets to bare IPv4/IPv6 addresses.</li>
+    <li><strong>Credential Deception (RFC 3986):</strong> Embedding target domain names before an <code>@</code> symbol to distract from the true destination host.</li>
+    <li><strong>Homograph & Punycode Mimicry:</strong> Replacing ASCII letters with visually identical Cyrillic characters (e.g. <code>xn--gogle-qoa.com</code>).</li>
+  </ul>
+</div>
+{% endblock %}
